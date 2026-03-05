@@ -1,19 +1,15 @@
-import PyPDF2
-from openai import OpenAI
-from sklearn.metrics.pairwise import cosine_similarity
 import os
+from openai import OpenAI
+import numpy as np
+import PyPDF2
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-
-def extract_text_from_pdf(uploaded_file):
+def extract_text_from_pdf(file):
+    reader = PyPDF2.PdfReader(file)
     text = ""
-    pdf = PyPDF2.PdfReader(uploaded_file)
-
-    for page in pdf.pages:
-        if page.extract_text():
-            text += page.extract_text()
-
+    for page in reader.pages:
+        text += page.extract_text()
     return text
 
 
@@ -22,22 +18,23 @@ def get_embedding(text):
         model="text-embedding-3-small",
         input=text
     )
-
     return response.data[0].embedding
 
 
-def rank_resumes(job_desc, resumes):
+def cosine_similarity(a, b):
+    a = np.array(a)
+    b = np.array(b)
+    return np.dot(a,b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
-    job_embedding = get_embedding(job_desc)
 
-    resume_embeddings = []
+def rank_resumes(job_description, resume_texts):
+    job_embedding = get_embedding(job_description)
 
-    for resume in resumes:
-        resume_embeddings.append(get_embedding(resume))
+    scores = []
 
-    scores = cosine_similarity(
-        [job_embedding],
-        resume_embeddings
-    )[0]
+    for text in resume_texts:
+        resume_embedding = get_embedding(text)
+        score = cosine_similarity(job_embedding, resume_embedding)
+        scores.append(score)
 
     return scores
