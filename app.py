@@ -1,6 +1,6 @@
 import streamlit as st 
 import pandas as pd
-from utils import extract_text_from_, rank_resumes
+from utils import extract_text_from_pdf, rank_resumes
 
 st.title("AI Resume Ranking System")
 
