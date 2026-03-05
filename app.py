@@ -1,50 +1,52 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
+
 from utils import extract_text_from_pdf, rank_resumes
 
-st.title("AI Resume Ranking System")
+st.set_page_config(page_title="AI Resume Ranker", layout="wide")
 
-st.write("Upload resumes and rank them according to job description")
+st.title("🤖 AI Resume Ranking System")
 
-# JOB DESCRIPTION INPUT
-job_description = st.text_area("Enter Job Description")
+job_description = st.text_area("Paste Job Description")
 
-# FILE UPLOAD
 uploaded_files = st.file_uploader(
     "Upload Resumes (PDF)",
-    accept_multiple_files=True,
-    type=["pdf"]
+    accept_multiple_files=True
 )
 
-# BUTTON
 if st.button("Rank Resumes"):
 
-    if job_description == "":
-        st.warning("Please enter job description")
-
-    elif uploaded_files is None:
-        st.warning("Please upload resumes")
-
-    else:
+    if job_description and uploaded_files:
 
         resume_texts = []
-        resume_names = []
+        names = []
 
         for file in uploaded_files:
             text = extract_text_from_pdf(file)
             resume_texts.append(text)
-            resume_names.append(file.name)
+            names.append(file.name)
 
         scores = rank_resumes(job_description, resume_texts)
 
-        data = pd.DataFrame({
-            "Resume": resume_names,
-            "Score": scores
+        df = pd.DataFrame({
+            "Resume": names,
+            "Match Score": scores
         })
 
-        data = data.sort_values(by="Score", ascending=False)
+        df = df.sort_values(by="Match Score", ascending=False)
 
-        st.subheader("Ranking Results")
-        st.dataframe(data)
+        st.subheader("🏆 Resume Ranking")
 
-        st.bar_chart(data.set_index("Resume"))
+        st.dataframe(df)
+
+        # chart
+        fig = px.bar(
+            df,
+            x="Resume",
+            y="Match Score",
+            color="Match Score",
+            title="Resume Matching Score"
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
